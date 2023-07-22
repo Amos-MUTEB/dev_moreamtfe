@@ -1,0 +1,61 @@
+#This version of terraform work, it deploy de EC2 instance but can still  not access the web page
+provider "aws" {
+  region = "eu-west-1"
+}
+resource "tls_private_key" "keypair" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "aws_key_pair" "keypair" {
+  key_name   = "moreamkeylinux"
+  public_key = tls_private_key.key_pair.public_key_openssh
+}
+
+resource "local_file" "moream5_ssh_key" {
+  filename = "${aws_key_pair.keypair.key_name}.pem"
+  content  = tls_private_key.keypair.private_key_pem
+}
+## Create security group
+resource "aws_security_group" "terraformdocker_sg" {
+  name = "terraform_docker_sg"
+  description = "Terraform Security Group"
+
+  ingress {
+    from_port = 9000
+    to_port   = 9000
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    protocol    = -1
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = {
+     type = "terraform-test-security-group"
+  }
+}
+
+## Create Instance EC2
+resource "aws_instance" "TerFKeypair010623" {
+  ami           = "ami-04f1014c8adcfa670"
+  instance_type = "t2.small"
+  key_name      = aws_key_pair.keypair.key_name
+  user_data     = file("shellcmd.sh")
+#  subnet_id     = "<desired_subnet_id>"
+#  vpc_security_group_ids = ["<desired_security_group_id>"]
+
+  vpc_security_group_ids = [aws_security_group.terraformdocker_sg.id]
+
+  tags = {
+    Name = "terF_Inst&KeyP220623"
+  }
+}

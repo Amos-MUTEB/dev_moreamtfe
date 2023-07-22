@@ -1,0 +1,97 @@
+version: '3.7'
+
+services:
+#itop
+  itop:
+    image: vbkunin/itop
+    container_name: itop
+    restart: always
+    ports:
+      - "8000:80"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=itop
+      - DB_USER=itop
+      - DB_PASSWORD=itop
+      - ITOP_MAIL_FROM=itop@moream.org
+      - ITOP_SMTP_SERVER=smtp-relay.gmail.com
+      - ITOP_SMTP_PORT=25
+    depends_on:
+      - itop-db
+    volumes:
+      - ./itop_data:/var/www/html/itop/conf
+
+  itop-db:
+    image: mariadb
+    container_name: itop-db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysecretpassword
+      - MYSQL_DATABASE=itop
+      - MYSQL_USER=itop
+      - MYSQL_PASSWORD=itop
+    volumes:
+      - ./itop_db_data:/var/lib/mysql
+
+#odoo
+  odoo-web:
+    image: odoo:16.0
+    depends_on:
+      - odoo-db
+    ports:
+      - "8069:8069"
+    environment:
+    - HOST=mydb
+    - USER=odoo
+    - PASSWORD=myodoo
+
+  odoo-db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=myodoo
+      - POSTGRES_USER=odoo
+      
+#portainer      
+  portainer:
+    image: portainer/portainer-ce
+    container_name: portainer-client
+    restart: always
+    ports:
+      - "9001:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer_data:/data
+    networks:
+      - itop_network
+
+  heimdall:
+    image: lscr.io/linuxserver/heimdall:latest
+    container_name: heimdall-client
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./heimdall-config:/config
+    ports:
+      - 8080:80
+      - 4443:443
+    restart: always
+  
+volumes:
+  itop_data:
+  itop_db_data:
+  portainer_data:
+  db-data:
+  zabbix-data:
+  ocsdata:
+    driver: local
+  ocssrv:
+    driver: local
+
+networks:
+  itop_network:
+  ocs_localocs:
+    attachable: true

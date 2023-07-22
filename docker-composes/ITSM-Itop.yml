@@ -1,0 +1,42 @@
+version: '2'
+
+#This version of itop applicatoin is 3.0.1
+services:
+  webitop:
+    container_name: web-itop
+    image: vbkunin/itop:latest-base
+    volumes:
+      - "itop_web_data:/var/lib/itop"
+      - "itop_web_config:/etc/itop"
+      - "itop_web_addons:/mnt/extra-addons"
+      - "itop_external_data:/data"
+    links:
+      - dbitop         # to have nice debug(...) outputs
+    stdin_open: true  # to be able to use CTRL+C to stop the debug
+    ports:
+      - 8080:80
+    restart: unless-stopped
+  dbitop:
+    container_name: db-itop
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: "dbitop"
+      MYSQL_USER: "itop"
+      MYSQL_PASSWORD: "itop"
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - "itop_db_data:/var/lib/mysql"
+    tty: true         # to have nice debug(...) outputs
+    stdin_open: true  # to be able to use CTRL+C to stop the debug
+    restart: unless-stopped
+volumes:
+  itop_web_data:
+    driver: local
+  itop_web_config:
+    driver: local
+  itop_web_addons:
+    driver: local
+  itop_db_data:
+    driver: local
+  itop_external_data:
+    driver: local

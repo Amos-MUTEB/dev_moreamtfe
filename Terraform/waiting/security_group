@@ -1,0 +1,28 @@
+## Create security group
+resource "aws_security_group" "terraformdocker_sg" {
+  name = "terraform_docker_sg"
+  description = "Terraform Security Group"
+
+  vpc_id = aws_vpc.moream_vpc.id
+  ingress {
+    from_port = 9000
+    to_port   = 9000
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    protocol    = -1
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = {
+     type = "terraform-test-security-group"
+  }
+}

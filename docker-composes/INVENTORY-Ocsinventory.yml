@@ -1,0 +1,53 @@
+# DOCKER v3 + OCS INVENTORY
+
+version: '3'
+services :
+  webocs:
+    image : ocsinventory/ocsinventory-docker-image:2.9
+    # container_name : ocsinventory-server3    
+    stdin_open: true 
+    tty: true 
+    environment :
+      OCS_DBNAME : webocs
+      OCS_DBSERVER_READ : inventaire
+      OCS_DBSERVER_WRITE : inventaire
+      OCS_DBUSER : inventaire  
+      OCS_DBPASS : inventaire
+      
+    volumes :
+      - ocssrv:/usr/share/ocsinventory-reports/
+      - ocssrv:/etc/ocsinventory-reports/
+      - ocssrv:/var/lib/ocsinventory-reports/
+    links :
+      - dbocs
+    networks:
+      - ocs_localocs
+    ports :
+      - 8091:80
+      - 4441:443
+
+  dbocs:
+    image : mysql:5.7
+    # container_name : ocsinventory-db3
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD : inventaire
+      MYSQL_USER : inventaire
+      MYSQL_PASSWORD : inventaire
+      MYSQL_DATABASE : dbocs
+    volumes :
+      - ./sql/:/docker-entrypoint-initdb.d/
+      - ocsdata:/var/lib/mysql
+    networks:
+      - ocs_localocs
+      
+networks:
+  ocs_localocs:
+    attachable: true
+
+volumes:
+  ocsdata:
+    driver: local
+  ocssrv:
+    driver: local
+  

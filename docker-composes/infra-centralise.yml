@@ -1,0 +1,132 @@
+version: '3.7'
+
+services:
+#zabbix
+  zabbix-db:
+    image: postgres
+    container_name: zabbix-db
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: zabbix
+      POSTGRES_DB: zabbix
+      TZ: Europe/Paris
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+  zabbix:
+    image: zabbix/zabbix-server-pgsql:latest
+    container_name: zabbix_active_agent
+    depends_on:
+      - zabbix-db
+    ports:
+      - 10051:10051
+      - 10050:10050
+    environment:
+      DB_SERVER_HOST: zabbix-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: zabbix
+      POSTGRES_DB: zabbix
+      ZBX_DATABASE_SCHEMA: zabbix
+    volumes:
+      - ./zabbix-data:/var/lib/zabbix
+    restart: always
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:latest
+    container_name: zabbix-server
+    depends_on:
+      - zabbix-db
+      - zabbix
+    ports:
+      - 8095:8080
+    environment:
+      DB_SERVER_HOST: zabbix-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: zabbix
+      POSTGRES_DB: zabbix
+      ZBX_SERVER_HOST: zabbix
+    restart: always
+
+#ocs
+  web-ocs:
+    image : ocsinventory/ocsinventory-docker-image:2.9
+    container_name : ocs    
+    stdin_open: true 
+    tty: true 
+#    environment :
+#      OCS_DBNAME : web-ocs
+#      OCS_DBSERVER_READ : inventaire
+#      OCS_DBSERVER_WRITE : inventaire
+#      OCS_DBUSER : inventaire  
+#      OCS_DBPASS : inventaire
+      
+    volumes :
+      - ocssrv:/usr/share/ocsinventory-reports/
+      - ocssrv:/etc/ocsinventory-reports/
+      - ocssrv:/var/lib/ocsinventory-reports/
+    links :
+      - ocs-db
+    networks:
+      - ocs_localocs
+    ports :
+      - 8091:80
+      - 4441:443
+
+  ocs-db:
+    image : mysql:5.7
+    container_name : ocs-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD : inventaire
+      MYSQL_USER : inventaire
+      MYSQL_PASSWORD : inventaire
+      MYSQL_DATABASE : dbocs
+    volumes :
+      - ./sql/:/docker-entrypoint-initdb.d/
+      - ocsdata:/var/lib/mysql
+    ports:
+      - 3306:3306
+    networks:
+      - ocs_localocs
+
+#portainer
+  portainer:
+    image: portainer/portainer-ce
+    container_name: portainer
+    restart: always
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer_data:/data
+    networks:
+      - itop_network
+
+#heimdall
+  heimdall:
+    image: lscr.io/linuxserver/heimdall:latest
+    container_name: heimdall
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./heimdall-config:/config
+    ports:
+      - 80:80
+      - 443:443
+    restart: always
+  
+volumes:
+  portainer_data:
+  db-data:
+  zabbix-data:
+  ocsdata:
+    driver: local
+  ocssrv:
+    driver: local
+
+networks:
+  itop_network:
+  ocs_localocs:
+    attachable: true

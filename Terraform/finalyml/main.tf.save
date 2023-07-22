@@ -1,0 +1,22 @@
+provider "aws" {
+  region = "eu-west-1"
+}
+
+resource "aws_instance" "TerFormDeployPortainer080523" {
+  ami           = "ami-04f1014c8adcfa670" # Amazon Linux 2 AMI
+  instance_type = "t2.micro"
+#  key_name      = "terraform_dev"
+  user_data	= file("file.sh")
+  security_groups = [ "Docker" ] 
+ 
+  tags = {
+     Name = "DockerServerInstance070523"
+   }
+}
+
+resource "aws_security_group" "Docker" {
+  tags = {
+     type = "terraform-test-security-group"
+  }    
+}
+
